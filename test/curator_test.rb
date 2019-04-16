@@ -52,15 +52,15 @@ class CuratorTest < MiniTest::Test
     assert_instance_of Curator, @curator
   end
 
-  def test_by_default_it_has_no_photographs
-    assert_empty @curator.photographs
+  def test_by_default_it_has_no_photos
+    assert_empty @curator.photos
   end
 
   def test_it_can_add_photographs
-    @curator.add_photograph(@photo_1)
-    @curator.add_photograph(@photo_2)
+    @curator.add_photo(@photo_1)
+    @curator.add_photo(@photo_2)
 
-    assert_equal [@photo_1, @photo_2], @curator.photographs
+    assert_equal [@photo_1, @photo_2], @curator.photos
   end
 
   def test_by_default_it_has_no_artists
@@ -82,36 +82,36 @@ class CuratorTest < MiniTest::Test
   end
 
   def test_it_can_find_a_photo_graph_by_id
-    @curator.add_photograph(@photo_1)
-    @curator.add_photograph(@photo_2)
+    @curator.add_photo(@photo_1)
+    @curator.add_photo(@photo_2)
 
-    assert_equal @photo_2, @curator.find_photograph_by_id("2")
+    assert_equal @photo_2, @curator.find_photo_by_id("2")
   end
 
-  def test_it_can_find_photographs_by_artist
-    @curator.add_photograph(@photo_1)
-    @curator.add_photograph(@photo_2)
-    @curator.add_photograph(@photo_3)
-    @curator.add_photograph(@photo_4)
+  def test_it_can_find_photos_by_artist
+    @curator.add_photo(@photo_1)
+    @curator.add_photo(@photo_2)
+    @curator.add_photo(@photo_3)
+    @curator.add_photo(@photo_4)
 
     @curator.add_artist(@artist_1)
     @curator.add_artist(@artist_2)
     @curator.add_artist(@artist_3)
 
-    assert_equal [@photo_3, @photo_4], @curator.find_photographs_by_artist(@artist_3)
+    assert_equal [@photo_3, @photo_4], @curator.find_photos_by_artist(@artist_3)
   end
 
-  def test_it_can_find_artists_with_multiple_photographs
-    @curator.add_photograph(@photo_1)
-    @curator.add_photograph(@photo_2)
-    @curator.add_photograph(@photo_3)
-    @curator.add_photograph(@photo_4)
+  def test_it_can_find_artists_with_multiple_photos
+    @curator.add_photo(@photo_1)
+    @curator.add_photo(@photo_2)
+    @curator.add_photo(@photo_3)
+    @curator.add_photo(@photo_4)
 
     @curator.add_artist(@artist_1)
     @curator.add_artist(@artist_2)
     @curator.add_artist(@artist_3)
 
-    assert_equal [@artist_3], @curator.artists_with_multiple_photographs
+    assert_equal [@artist_3], @curator.artists_with_multiple_photos
   end
 
   def test_it_can_find_all_artists_by_country
@@ -130,44 +130,57 @@ class CuratorTest < MiniTest::Test
     assert_equal ["2", "3"], @curator.find_artist_ids_by_country("United States")
   end
 
-  def test_it_can_find_all_photographs_taken_by_artists_from_a_country
-    @curator.add_photograph(@photo_1)
-    @curator.add_photograph(@photo_2)
-    @curator.add_photograph(@photo_3)
-    @curator.add_photograph(@photo_4)
+  def test_it_can_find_all_photos_taken_by_artists_from_a_country
+    @curator.add_photo(@photo_1)
+    @curator.add_photo(@photo_2)
+    @curator.add_photo(@photo_3)
+    @curator.add_photo(@photo_4)
 
     @curator.add_artist(@artist_1)
     @curator.add_artist(@artist_2)
     @curator.add_artist(@artist_3)
 
-    assert_equal [@photo_2, @photo_3, @photo_4], @curator.photographs_taken_by_artists_from("United States")
+    assert_equal [@photo_2, @photo_3, @photo_4], @curator.photos_taken_by_artists_from("United States")
 
-    assert_empty @curator.photographs_taken_by_artists_from("Argentina")
+    assert_empty @curator.photos_taken_by_artists_from("Argentina")
   end
 
-  def test_it_can_load_photographs_from_a_csv
-    @curator.load_photographs('./data/photographs.csv')
+  def test_it_can_load_photos_from_a_csv
+    @curator.load_photos('./data/photographs.csv')
 
-    assert_equal [@photo_1, @photo_2, @photo_3, @photo_4], @curator.photographs
+    assert_equal 4, @curator.photos.count
+
+    @curator.photos.each do |photo|
+      assert_instance_of Photograph, photo
+    end
   end
 
   def test_it_can_load_artists_from_a_csv
-    skip
-    @curator.load_photographs('./data/artists.csv')
+    @curator.load_artists('./data/artists.csv')
 
-    assert_equal [@artist_1, @artist_2, @artist_3], @curator.artists
+    assert_equal 6, @curator.artists.count
+
+    @curator.artists.each do |artist|
+      assert_instance_of Artist, artist
+    end
+  end
+
+  def test_it_can_return_photos_taken_between_a_range
+    @curator.load_photos('./data/photographs.csv')
+
+    assert_equal 2, @curator.photos_taken_between(1950..1965).count
+  end
+
+  def test_it_can_return_artist_photos_by_age
+    @curator.load_photos('./data/photographs.csv')
+    @curator.load_artists('./data/artists.csv')
+    
+    @diane_arbus = @curator.find_artist_by_id("3")
+
+    expected = {44 => "Identical Twins, Roselle, New Jersey",
+                39 => "Child with Toy Hand Grenade in Central Park"}
+
+    assert_equal expected, @curator.artists_photographs_by_age(@diane_arbus)
   end
 
 end
-
-# * `photographs_taken_between(range)` - This method takes a range and returns an array of all photographs with a year that falls in that range.
-# * `artists_photographs_by_age(artist)`- This method takes an `Artist` object and return a hash where the keys are the Artists age when they took a photograph, and the values are the names of the photographs.
-
-# pry(main)> curator.photographs_taken_between(1950..1965)
-# #=> [#<Photograpah:0x00007fd986254740...>, #<Photograph:0x00007fd986254678...>]
-#
-# pry(main)> diane_arbus = curator.find_artist_by_id("3")
-#
-# pry(main)> curator.artists_photographs_by_age(diane_arbus)
-# => {44=>"Identical Twins, Roselle, New Jersey", 39=>"Child with Toy Hand Grenade in Central Park"}
-# ```

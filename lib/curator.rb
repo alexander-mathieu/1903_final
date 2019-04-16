@@ -1,14 +1,14 @@
 class Curator
-  attr_reader :photographs,
+  attr_reader :photos,
               :artists
 
   def initialize
-    @photographs = []
-    @artists     = []
+    @photos  = []
+    @artists = []
   end
 
-  def add_photograph(photograph)
-    @photographs << photograph
+  def add_photo(photo)
+    @photos << photo
   end
 
   def add_artist(artist)
@@ -19,23 +19,21 @@ class Curator
     @artists.find {|artist| artist.id == id}
   end
 
-  def find_photograph_by_id(id)
-    @photographs.find {|photograph| photograph.id == id}
+  def find_photo_by_id(id)
+    @photos.find {|photo| photo.id == id}
   end
 
-  def artists_with_multiple_photographs
-    @artists.find_all {|artist| find_photographs_by_artist(artist).count > 1}
+  def artists_with_multiple_photos
+    @artists.find_all {|artist| find_photos_by_artist(artist).count > 1}
   end
 
-  def find_photographs_by_artist(artist)
-    @photographs.find_all {|photograph| photograph.artist_id == artist.id}
+  def find_photos_by_artist(artist)
+    @photos.find_all {|photo| photo.artist_id == artist.id}
   end
 
-  def photographs_taken_by_artists_from(country)
+  def photos_taken_by_artists_from(country)
     artist_ids = find_artist_ids_by_country(country)
-    @photographs.find_all do |photograph|
-      artist_ids.include?(photograph.artist_id)
-    end
+    @photos.find_all {|photo| artist_ids.include?(photo.artist_id)}
   end
 
   def find_artist_ids_by_country(country)
@@ -46,17 +44,28 @@ class Curator
     @artists.find_all {|artist| artist.country == country}
   end
 
-  def load_photographs(file_path)
-    photographs = CSV.table(file_path)
-    photographs.map do |photo_attributes|
-      add_photograph(Photograph.new(photo_attributes))
-    end
+  def load_photos(file_path)
+    format_options = {headers: true, header_converters: :symbol, force_quotes: true}
+    photos = CSV.read(file_path, format_options)
+    photos.map {|attributes| add_photo(Photograph.new(attributes))}
   end
 
   def load_artists(file_path)
-    artists = CSV.table(file_path)
-    artists.map do |artist_attributes|
-      add_photograph(Photograph.new(artist_attributes))
+    format_options = {headers: true, header_converters: :symbol, force_quotes: true}
+    artists = CSV.read(file_path, format_options)
+    artists.map {|attributes| add_artist(Artist.new(attributes))}
+  end
+
+  def photos_taken_between(range)
+    @photos.find_all {|photo| range.to_a.include?(photo.year.to_i)}
+  end
+
+  def artists_photographs_by_age(artist)
+    @photos.inject({}) do |ages, photo|
+      if photo.artist_id == artist.id
+        ages[photo.year.to_i - artist.born.to_i] = photo.name
+      end
+        ages
     end
   end
 
